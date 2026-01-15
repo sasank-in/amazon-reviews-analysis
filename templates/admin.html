@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Dashboard - Sentiment Analyzer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e8e8e8;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            text-align: center;
+            background: linear-gradient(135deg, #fff 0%, #a8d8ea 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #8892b0;
+            margin-bottom: 12px;
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #64ffda;
+        }
+
+        .feedback-table {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            color: #ccd6f6;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .badge.correct {
+            background: rgba(100, 255, 218, 0.2);
+            color: #64ffda;
+        }
+
+        .badge.incorrect {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .badge.positive {
+            background: rgba(72, 201, 176, 0.2);
+            color: #64ffda;
+        }
+
+        .badge.negative {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .text-preview {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8892b0;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 30px;
+            color: #64ffda;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Analyzer</a>
+        <h1>📊 Feedback Dashboard</h1>
+        
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Feedback</div>
+                <div class="stat-value" id="total-feedback">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Correct Predictions</div>
+                <div class="stat-value" id="correct-predictions">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Incorrect Predictions</div>
+                <div class="stat-value" id="incorrect-predictions">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Accuracy</div>
+                <div class="stat-value" id="accuracy">-</div>
+            </div>
+        </div>
+
+        <div class="feedback-table">
+            <h2 style="margin-bottom: 20px; color: #ccd6f6;">Recent Feedback</h2>
+            <div id="table-container">
+                <div class="loading">Loading feedback...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadStats() {
+            try {
+                const response = await fetch('/feedback/stats');
+                const data = await response.json();
+                
+                document.getElementById('total-feedback').textContent = data.total_feedback;
+                document.getElementById('correct-predictions').textContent = data.correct_predictions;
+                document.getElementById('incorrect-predictions').textContent = data.incorrect_predictions;
+                document.getElementById('accuracy').textContent = data.accuracy + '%';
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        async function loadFeedback() {
+            try {
+                const response = await fetch('/feedback');
+                const data = await response.json();
+                
+                const tableContainer = document.getElementById('table-container');
+                
+                if (data.feedback.length === 0) {
+                    tableContainer.innerHTML = '<div class="loading">No feedback yet</div>';
+                    return;
+                }
+                
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Text</th>
+                            <th>Predicted</th>
+                            <th>Confidence</th>
+                            <th>Status</th>
+                            <th>Correct Label</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.feedback.map(f => `
+                            <tr>
+                                <td>${new Date(f.created_at).toLocaleString()}</td>
+                                <td><div class="text-preview" title="${f.text}">${f.text}</div></td>
+                                <td><span class="badge ${f.predicted_sentiment.toLowerCase()}">${f.predicted_sentiment}</span></td>
+                                <td>${f.predicted_confidence}%</td>
+                                <td><span class="badge ${f.is_correct ? 'correct' : 'incorrect'}">${f.is_correct ? 'Correct' : 'Wrong'}</span></td>
+                                <td>${f.correct_label ? `<span class="badge ${f.correct_label.toLowerCase()}">${f.correct_label}</span>` : '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+                
+                tableContainer.innerHTML = '';
+                tableContainer.appendChild(table);
+            } catch (error) {
+                console.error('Failed to load feedback:', error);
+                document.getElementById('table-container').innerHTML = '<div class="loading">Failed to load feedback</div>';
+            }
+        }
+
+        // Load data on page load
+        loadStats();
+        loadFeedback();
+
+        // Refresh every 30 seconds
+        setInterval(() => {
+            loadStats();
+            loadFeedback();
+        }, 30000);
+    </script>
+</body>
+</html>

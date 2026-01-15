@@ -56,3 +56,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+feedback.db

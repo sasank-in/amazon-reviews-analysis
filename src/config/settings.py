@@ -32,6 +32,13 @@ class Config:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     
+    # Database settings
+    SQLALCHEMY_DATABASE_URI: str = os.getenv(
+        "DATABASE_URL",
+        f"sqlite:///{BASE_DIR / 'feedback.db'}"
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
+    
     # Environment settings
     TF_ENABLE_ONEDNN_OPTS: str = "0"
     

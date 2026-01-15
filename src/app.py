@@ -8,6 +8,7 @@ from flask import Flask
 
 from .config.settings import Config, get_config
 from .api.routes import api, sentiment_service
+from .database.models import db
 
 
 def create_app(config_name: str = 'default') -> Flask:
@@ -42,11 +43,15 @@ def create_app(config_name: str = 'default') -> Flask:
     # Load configuration
     app.config.from_object(config)
     
+    # Initialize database
+    db.init_app(app)
+    
     # Register blueprints
     app.register_blueprint(api)
     
-    # Initialize services
+    # Initialize services and database
     with app.app_context():
+        initialize_database()
         initialize_services()
     
     logger.info(f"{Config.APP_NAME} v{Config.VERSION} initialized")
@@ -62,6 +67,18 @@ def setup_logging(config: Config) -> None:
     )
 
 
+def initialize_database() -> None:
+    """Initialize database tables."""
+    logger = logging.getLogger(__name__)
+    logger.info("Initializing database...")
+    try:
+        db.create_all()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
+
+
 def initialize_services() -> None:
     """Initialize application services."""
     logger = logging.getLogger(__name__)
@@ -73,3 +90,4 @@ def initialize_services() -> None:
     except Exception as e:
         logger.error(f"Failed to initialize services: {e}")
         raise
+
